@@ -37,7 +37,7 @@ fi
 
 # 4. Comprovació de l'estructura administrativa 
 echo "Verificant directoris administratius a /opt/admin..."
-for dir in scripts backups logs configs; do
+for dir in scripts logs configs; do
     if [ -d "/opt/admin/$dir" ]; then
         echo -e "  - /opt/admin/$dir: ${VERD}[PRESENT]${NC}"
         

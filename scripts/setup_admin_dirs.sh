@@ -13,7 +13,7 @@ ADMIN_PATH="/opt/admin"
 
 # (2). CREACIÓ DE L'ESTRUCTURA (Idempotència) 
 # Creem les carpetes necessàries, incloent 'configs' per a la verificació
-mkdir -p $ADMIN_PATH/{scripts,backups,logs,configs}
+mkdir -p $ADMIN_PATH/{scripts,logs,configs}
 
 # (3). PERMISOS PER A COL·LABORACIÓ 
 # El grup 'sudo' permet que ambdós membres de l'equip hi treballin 
