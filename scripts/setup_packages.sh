@@ -1,19 +1,16 @@
 #!/bin/bash
 
-# COMPROVACIÓ INICIAL DE SEGURETAT
 if [ "$EUID" -ne 0 ]; then
-    echo "Si us plau, executa'm fent servir root (su -)."
+    echo "Si us plau, executa'm fent servir root (su -) o sudo."
     exit 1
 fi
 
 echo "--- Instal·lant paquets i eines bàsiques ---"
 
-# (1). ACTUALITZACIÓ I INSTAL·LACIÓ
-# Instal·lem les eines necessàries per a l'administració
-apt update && apt install -y sudo openssh-server git htop
+# (1). ACTUALITZACIÓ I INSTAL·LACIÓ (Afegit nginx)
+apt update && apt install -y sudo openssh-server git htop nginx
 
 # (2). PRIVILEGIS (Escalada segura)
-# Afegim l'usuari gsx al grup sudo per complir el principi de mínim privilegi
 if groups gsx | grep -q "\bsudo\b"; then
     echo "L'usuari gsx ja té permisos de sudo."
 else
@@ -22,7 +19,33 @@ else
 fi
 
 # (3). ACTIVACIÓ DEL SERVEI SSH
-# Activem accés remot per a la col·laboració de l'equip
 systemctl enable --now ssh
 
-echo "--- Instal·lació completada. Recorda reiniciar per aplicar els grups. ---"
+# =========================================================================
+# (4). CONFIGURACIÓ DE SERVEIS (WEEK 2) 
+# =========================================================================
+echo "--- Configurant serveis de la Week 2 (Nginx & Backup) ---"
+
+# 4.1 Resiliència per a Nginx (Override)
+mkdir -p /etc/systemd/system/nginx.service.d/
+cp /opt/admin/configs/nginx-override.conf /etc/systemd/system/nginx.service.d/override.conf
+
+# 4.2 Serveis i Timers de Backup (Enllaços simbòlics)
+ln -sf /opt/admin/configs/backup-gsx.service /etc/systemd/system/backup-gsx.service
+ln -sf /opt/admin/configs/backup-gsx.timer /etc/systemd/system/backup-gsx.timer
+
+# 4.3 Recarregar systemd perquè llegeixi els nous arxius
+systemctl daemon-reload
+
+# 4.4 Activar l'Nginx i el Timer del Backup perquè arrenquin sols
+systemctl enable --now nginx
+systemctl restart nginx
+systemctl enable --now backup-gsx.timer
+
+# 4.5 Configurar rotació de logs (Journald)
+echo "Configurant límits de retenció de logs..."
+mkdir -p /etc/systemd/journald.conf.d/
+ln -sf /opt/admin/configs/journald-limits.conf /etc/systemd/journald.conf.d/99-limits.conf
+systemctl restart systemd-journald
+
+echo "--- Instal·lació i configuració de serveis completada. ---"
