@@ -7,7 +7,7 @@ OnCalendar=daily
 # Persistent=true fa que si el servidor estava apagat a l'hora programada, 
 # faci el backup immediatament quan s'engegui. Molt útil!
 Persistent=true
-Unit=backup-gsx.service
+Unit=backup-gsx-24h.service
 
 [Install]
 WantedBy=timers.target

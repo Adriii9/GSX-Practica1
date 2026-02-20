@@ -31,8 +31,14 @@ mkdir -p /etc/systemd/system/nginx.service.d/
 cp /opt/admin/configs/nginx-override.conf /etc/systemd/system/nginx.service.d/override.conf
 
 # 4.2 Serveis i Timers de Backup (Enllaços simbòlics)
-ln -sf /opt/admin/configs/backup-gsx.service /etc/systemd/system/backup-gsx.service
-ln -sf /opt/admin/configs/backup-gsx.timer /etc/systemd/system/backup-gsx.timer
+sudo ln -sf /opt/admin/configs/backup-gsx-24h.service /etc/systemd/system/backup-gsx-24h.service
+sudo ln -sf /opt/admin/configs/backup-gsx-24h.timer /etc/systemd/system/backup-gsx-24h.timer
+
+sudo ln -sf /opt/admin/configs/backup-gsx-72h.service /etc/systemd/system/backup-gsx-72h.service
+sudo ln -sf /opt/admin/configs/backup-gsx-72h.timer /etc/systemd/system/backup-gsx-72h.timer
+
+sudo ln -sf /opt/admin/configs/backup-gsx-7D.service /etc/systemd/system/backup-gsx-7D.service
+sudo ln -sf /opt/admin/configs/backup-gsx-7D.timer /etc/systemd/system/backup-gsx-7D.timer
 
 # 4.3 Recarregar systemd perquè llegeixi els nous arxius
 systemctl daemon-reload

@@ -6,16 +6,22 @@
 # ASSIGNATURA: Gestió de Sistemes i Xarxes - Pràctica 1 (Week 1)
 # ==============================================================================
 
+# 1. Comprovem si l'script ha rebut un paràmetre (ex: "24h", "72h", "7D")
+if [ -z "$1" ]; then
+    echo "❌ ERROR: Has d'indicar la freqüència del backup com a paràmetre."
+    echo "Ús: $0 <freqüència> (ex: $0 diari)"
+    exit 1
+fi
 
-# 1. Configuració de Variables i Lectura de l'arxiu
-# ------------------------------------------------------------------------------
-ARXIU_CONFIG="/opt/admin/configs/config_backups.txt"
+FREQUENCIA=$1
+ARXIU_CONFIG="/opt/admin/configs/config_backups_${FREQUENCIA}.txt"
 
 # 1.1 Comprovem si l'arxiu de configuració existeix
 if [ ! -f "$ARXIU_CONFIG" ]; then
-    echo "ERROR: No s'ha trobat l'arxiu de configuració a $ARXIU_CONFIG"
+    echo "❌ ERROR: No s'ha trobat l'arxiu de configuració a $ARXIU_CONFIG"
     exit 1
 fi
+
 
 # 1.2 Llegim la ruta (agafem la primera línia de l'arxiu)
 DIR_ORIGEN=$(head -n 1 "$ARXIU_CONFIG")

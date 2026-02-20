@@ -1,0 +1,9 @@
+[Unit]
+Description=Servei de Backup de la Infraestructura GSX (Freqüència: 72h)
+
+[Service]
+Type=oneshot
+# Indiquem la ruta absoluta al script
+ExecStart=/opt/admin/scripts/backup_data.sh 72h
+# Systemd l'executarà com a root, de manera que els comandos 'sudo' de dins l'script no demanaran contrasenya
+User=root
