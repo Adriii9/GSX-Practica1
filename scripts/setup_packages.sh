@@ -46,7 +46,9 @@ systemctl daemon-reload
 # 4.4 Activar l'Nginx i el Timer del Backup perquè arrenquin sols
 systemctl enable --now nginx
 systemctl restart nginx
-systemctl enable --now backup-gsx.timer
+systemctl enable --now backup-gsx-24h.timer
+systemctl enable --now backup-gsx-72h.timer
+systemctl enable --now backup-gsx-7D.timer
 
 # 4.5 Configurar rotació de logs (Journald)
 echo "Configurant límits de retenció de logs..."
