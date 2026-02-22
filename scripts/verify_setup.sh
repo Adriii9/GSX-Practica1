@@ -19,7 +19,8 @@ fi
 
 # Verificar Timer del Backup
 echo -n "Verificant automatització del Backup (Timer)... "
-if systemctl is-active --quiet backup-gsx.timer; then
+if systemctl is-active --quiet backup-gsx-24h.timer && systemctl is-active --quiet backup-gsx-72h.timer && systemctl is-active --quiet backup-gsx-7D.timer; then
     echo -e "${VERD}[PROGRAMAT]${NC}"
 else
-    echo -e "${VERMELL}[INACTIU]${NC}" fi
+    echo -e "${VERMELL}[INACTIU]${NC}" 
+fi

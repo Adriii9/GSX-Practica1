@@ -3,7 +3,7 @@
 # 1. DEFINICIÓ DE VARIABLES
 ADMIN_PATH="/opt/admin"
 REPO_URL="https://github.com/Adriii9/GSX-Practica1"
-TARGET_COMMIT="b36fbb4"
+TARGET_COMMIT="270fe05"
 
 # 2. COMPROVACIÓ DE SEGURETAT
 if [ "$EUID" -ne 0 ]; then 
