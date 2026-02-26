@@ -40,8 +40,11 @@ sudo ln -sf /opt/admin/configs/backup-gsx-72h.timer /etc/systemd/system/backup-g
 sudo ln -sf /opt/admin/configs/backup-gsx-7D.service /etc/systemd/system/backup-gsx-7D.service
 sudo ln -sf /opt/admin/configs/backup-gsx-7D.timer /etc/systemd/system/backup-gsx-7D.timer
 
+#Week 3, enllaç simbòlic per service de workload-simulator
+sudo ln -sf /opt/admin/configs/workload-simulator.service /etc/systemd/system/workload-simulator.service
+
 # 4.3 Recarregar systemd perquè llegeixi els nous arxius
-systemctl daemon-reload
+sudo systemctl daemon-reload
 
 # 4.4 Activar l'Nginx i el Timer del Backup perquè arrenquin sols
 systemctl enable --now nginx

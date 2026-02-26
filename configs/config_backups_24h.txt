@@ -1,1 +1,1 @@
-/opt/admin/logs
+/usr
