@@ -59,4 +59,13 @@ mkdir -p /etc/systemd/journald.conf.d/
 ln -sf /opt/admin/configs/journald-limits.conf /etc/systemd/journald.conf.d/99-limits.conf
 systemctl restart systemd-journald
 
+# 4.6 Límits d'Usuari PAM (Week 3)
+echo "Configurant límits PAM per a l'usuari gsx..."
+cat <<EOF | sudo tee /etc/security/limits.d/gsx-limits.conf > /dev/null
+gsx hard nproc 400
+gsx soft nproc 300
+gsx hard nofile 4096
+gsx soft nofile 1024
+EOF
+
 echo "--- Instal·lació i configuració de serveis completada. ---"

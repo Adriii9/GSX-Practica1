@@ -15,6 +15,9 @@ echo "  2. kill -SIGUSR1 $$"
 echo "  3. kill -SIGUSR2 $$"
 echo "  4. kill -SIGTERM $$"
 echo "  5. killall workload_simulator.sh"
+echo "  [PRIORITAT] renice -n 10 $$ (Fa que consumeixi menys CPU)"
+echo "  [PAUSAR]    kill -SIGSTOP $$ (Congela el procés)"
+echo "  [REPRENDRE] kill -SIGCONT $$ (Descongela el procés)"
 echo "---------------------------------------"
 
 # 2. Generem càrrega real a la CPU
