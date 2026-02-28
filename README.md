@@ -1,5 +1,5 @@
 
-# GreenDevCorp Startup Infrastructure (PAU DOMINGO TORRIJOS I ADRIÀ CABRÉ ACER)            
+# GreenDevCorp PRÀCTICA - 1    (PAU DOMINGO TORRIJOS I ADRIÀ CABRÉ ACER)            
 
 #***************************************************************************************************************************************#
 #                                                                                                                                       #
@@ -124,6 +124,84 @@ Per evitar que el sistema es quedi sense espai i per facilitar el diagnòstic, h
  * **Límits de Journald**: Hem restringit l'ús de disc dels logs a 100MB i una retenció màxima de 3 mesos mitjançant journald-limits.conf.
 
  * **Script de Diagnòstic (check_logs.sh):** Una eina ràpida per auditar l'estat de Nginx, verificar l'èxit dels últims backups i monitoritzar l'espai que ocupen els logs en temps real.
+
+
+
+#=====================================================================================#
+#                       S   E   T   M   A   N   A   -       3                         #
+#=====================================================================================#
+
+**Gestió de Processos, Senyals i Control de Recursos**
+
+A mesura que la infraestructura de GreenDevCorp creix, diversos serveis i usuaris competeixen pels mateixos recursos de maquinari (CPU, Memòria, I/O). 
+L'objectiu d'aquesta tercera setmana ha estat implementar eines d'observabilitat per diagnosticar colls d'ampolla i establir límits estrictes 
+(tant a nivell de servei com d'usuari) per evitar que processos descontrolats comprometin l'estabilitat del servidor.
+
+## 1. Observabilitat i Diagnòstic de Processos
+Quan el servidor va lent, "reiniciar-lo" no és una solució acceptable. Per diagnosticar problemes de rendiment de forma sistemàtica, 
+s'han desenvolupat dos scripts clau:
+
+* **`diagnose_processes.sh`**: Proporciona una fotografia global de l'estat del sistema.
+  * **Anàlisi de `/proc`**: Llegeix directament de `/proc/loadavg` i `/proc/meminfo` per obtenir mètriques de càrrega global del sistema 
+ i memòria disponible sense la sobrecàrrega d'altres programes.
+  * **Top Consumidors**: Utilitza `ps` ordenat dinàmicament per localitzar el "Top 5" de processos que més CPU i Memòria estan consumint en temps real.
+  * **Jerarquia**: Genera un arbre de processos (`pstree`) per entendre les relacions pare-fill, essencial per saber quin servei ha llançat
+ un procés problemàtic.
+
+* **`diagnose_specific_process.sh`**: Eina de diagnòstic avançat per observar un procés concret (ex. `./diagnose_specific_process.sh nginx`).
+  * A més de les mètriques bàsiques d'ús, extreu informació vital de `/proc/[PID]/status`, com ara el nombre de fils d'execució (*Threads*) 
+   i els canvis de context voluntaris (*voluntary_ctxt_switches*). 
+   Aquesta informació és crucial per detectar aplicacions que fan un ús ineficient de la multitasca.
+
+## 2. Process Lifecycle i Gestió de Senyals (Signals)
+Per comprendre com interactua el sistema operatiu amb els processos en execució, s'ha creat un entorn de proves segur:
+
+* **`workload_simulator.sh`**: Aquest script simula una càrrega de treball pesada (llançant la comanda `yes` en segon pla) i es manté en un bucle d'espera.
+* **Tractament de Senyals (`trap`)**: L'script està dissenyat per interceptar (o atrapar) senyals específics del sistema:
+  * `SIGTERM (15)` i `SIGINT (2)`: S'han configurat per executar un tancament net (*graceful shutdown*), netejant els processos fills abans de sortir,
+ evitant així deixar processos *zombie*.
+  * `SIGHUP (1)`: Simula la recàrrega de configuració sense aturar el servei.
+  * `SIGUSR1 / SIGUSR2`: Senyals personalitzats utilitzats per mostrar l'estat del procés.
+* Gràcies a aquest simulador, podem practicar la suspensió de processos (`kill -SIGSTOP`), la represa (`kill -SIGCONT`) i la modificació de prioritats
+ de planificació de la CPU utilitzant `nice` i `renice`.
+
+## 3. Control de Recursos i Resiliència
+Per garantir que la màquina no caigui per culpa d'un *script* maliciós, d'un error de programació  o d'un procés legítim molt pesat, hem implementat
+ la següent arquitectura de defensa en profunditat:
+
+### A) Límits a nivell de Servei (cgroups v2)
+El nucli (Kernel) de Linux permet agrupar processos i limitar-ne l'ús de recursos mitjançant els *Control Groups*. Hem aplicat aquestes restriccions 
+des de `systemd`:
+* **Servei Simulat (`workload-simulator.service`)**: Limitat a un ús màxim del 25% d'un nucli de CPU (`CPUQuota=25%`) i un límit de memòria 
+RAM de 100 MB (`MemoryMax=100M`). Això demostra que podem tenir aplicacions pesades contingudes de forma segura.
+* **Serveis de Còpia de Seguretat**: S'han modificat els serveis creats a la Week 2 (`backup-gsx-24h`, `72h` i `7D`) per limitar-ne el consum (30% CPU, 200MB RAM). *Justificació de disseny:* Un procés de *backup* intensiu (comprimir fitxers amb `tar -cz`) no hauria d'acaparar mai la CPU del servidor web de producció (Nginx).
+
+### B) Límits a nivell d'Usuari (PAM)
+S'ha configurat el mòdul d'autenticació PAM mitjançant el fitxer `/etc/security/limits.d/gsx-limits.conf` per protegir el sistema a nivell de sessió per a
+ l'usuari `gsx`:
+* **`nproc` (Processos concurrents)**: Límit *soft* de 300 i *hard* de 400 processos. Aquesta és la defensa principal contra atacs de denegació de servei
+ local com les *fork-bombs*.
+* **`nofile` (Fitxers oberts simultàniament)**: Límit *soft* de 1024 i *hard* de 4096. Evita que una aplicació mal programada exhaureixi els descriptors
+ de fitxers de tot el servidor.
+
+## 4. Runbook: Guia Ràpida de Troubleshooting (Week 3)
+**Incidència:** *El servidor es nota molt lent. Què he de revisar?*
+
+1. **Executa el diagnòstic bàsic:** Llença `sudo /opt/admin/scripts/diagnose_processes.sh` per veure la càrrega mitjana (*Load Average*). 
+ Si supera el nombre de nuclis del sistema, tenim un coll d'ampolla.
+2. **Identifica el procés:** Mira la secció del "Top 5". Si un procés té un `%CPU` proper al 100%, pren nota del seu PID i nom.
+3. **Auditoria específica:** Llença `/opt/admin/scripts/diagnose_specific_process.sh [NOM_PROCES]` per veure el consum de fils i canvis de context.
+4. **Acció correctiva:** * Si el procés és legítim però poc prioritari (ex. un script de dades), redueix la seva prioritat: `sudo renice -n 10 -p [PID]`.
+   * Si el procés s'ha quedat penjat temporalment: `sudo kill -SIGSTOP [PID]`.
+   * Si el procés és erroni i cal finalitzar-lo: Intenta `sudo kill -SIGTERM [PID]` primer. Utilitza `sudo kill -SIGKILL [PID]` només com a últim recurs.
+
+
+
+
+
+
+
+
 
 
 
