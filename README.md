@@ -97,6 +97,9 @@ Per replicar aquest entorn en un servidor nou:
    `sudo /opt/admin/scripts/verify_setup.sh`
 
 
+
+
+
 #=====================================================================================#
 #                       S   E   T   M   A   N   A   -       2	           	      #
 #=====================================================================================#
@@ -183,17 +186,6 @@ S'ha configurat el mòdul d'autenticació PAM mitjançant el fitxer `/etc/securi
  local com les *fork-bombs*.
 * **`nofile` (Fitxers oberts simultàniament)**: Límit *soft* de 1024 i *hard* de 4096. Evita que una aplicació mal programada exhaureixi els descriptors
  de fitxers de tot el servidor.
-
-## 4. Runbook: Guia Ràpida de Troubleshooting (Week 3)
-**Incidència:** *El servidor es nota molt lent. Què he de revisar?*
-
-1. **Executa el diagnòstic bàsic:** Llença `sudo /opt/admin/scripts/diagnose_processes.sh` per veure la càrrega mitjana (*Load Average*). 
- Si supera el nombre de nuclis del sistema, tenim un coll d'ampolla.
-2. **Identifica el procés:** Mira la secció del "Top 5". Si un procés té un `%CPU` proper al 100%, pren nota del seu PID i nom.
-3. **Auditoria específica:** Llença `/opt/admin/scripts/diagnose_specific_process.sh [NOM_PROCES]` per veure el consum de fils i canvis de context.
-4. **Acció correctiva:** * Si el procés és legítim però poc prioritari (ex. un script de dades), redueix la seva prioritat: `sudo renice -n 10 -p [PID]`.
-   * Si el procés s'ha quedat penjat temporalment: `sudo kill -SIGSTOP [PID]`.
-   * Si el procés és erroni i cal finalitzar-lo: Intenta `sudo kill -SIGTERM [PID]` primer. Utilitza `sudo kill -SIGKILL [PID]` només com a últim recurs.
 
 
 
