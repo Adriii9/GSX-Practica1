@@ -19,14 +19,14 @@ mkdir -p $ADMIN_PATH/{scripts,logs,configs}
 # El grup 'sudo' permet que ambdós membres de l'equip hi treballin 
 # Apliquem el principi de mínim privilegi en els permisos 
 chown -R root:sudo $ADMIN_PATH
-chmod -R 775 $ADMIN_PATH
+chmod -R 770 $ADMIN_PATH
 
 # Donem la propietat del directori .git al grup sudo (on ets tu)
 chown -R root:sudo /opt/admin/.git
 # Ens assegurem que el grup tingui permisos d'escriptura
-chmod -R 775 /opt/admin/.git
+chmod -R 770 /opt/admin/.git
 
 
 
 echo "--- Estructura creada correctament a $ADMIN_PATH ---"
-ls -l $ADMIN_PATH
+ls -la $ADMIN_PATH

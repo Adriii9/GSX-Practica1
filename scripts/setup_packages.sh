@@ -68,4 +68,9 @@ gsx hard nofile 4096
 gsx soft nofile 1024
 EOF
 
+
+# 4.7 Personalització de l'entorn (Week 4)
+echo "Configurant l'entorn de shell compartit..."
+sudo ln -sf /opt/admin/configs/greendevcorp_env.sh /etc/profile.d/greendevcorp_env.sh
+
 echo "--- Instal·lació i configuració de serveis completada. ---"
