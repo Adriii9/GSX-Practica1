@@ -9,6 +9,7 @@ echo "--- Instal·lant paquets i eines bàsiques ---"
 
 # (1). ACTUALITZACIÓ I INSTAL·LACIÓ (Afegit nginx)
 apt update && apt install -y sudo openssh-server git htop nginx
+sudo apt update && sudo apt install -y rsync
 
 # (2). PRIVILEGIS (Escalada segura)
 if groups gsx | grep -q "\bsudo\b"; then
@@ -43,6 +44,10 @@ sudo ln -sf /opt/admin/configs/backup-gsx-7D.timer /etc/systemd/system/backup-gs
 #Week 3, enllaç simbòlic per service de workload-simulator
 sudo ln -sf /opt/admin/configs/workload-simulator.service /etc/systemd/system/workload-simulator.service
 
+#Week 5, enllaç simbòlic per service de backup-incremental
+sudo ln -sf /opt/admin/configs/backup-incremental.service /etc/systemd/system/backup-incremental.service
+sudo ln -sf /opt/admin/configs/backup-incremental.timer /etc/systemd/system/backup-incremental.timer
+
 # 4.3 Recarregar systemd perquè llegeixi els nous arxius
 sudo systemctl daemon-reload
 
@@ -52,7 +57,8 @@ systemctl restart nginx
 systemctl enable --now backup-gsx-24h.timer
 systemctl enable --now backup-gsx-72h.timer
 systemctl enable --now backup-gsx-7D.timer
-
+systemctl enable --now workload-simulator.timer
+systemctl enable --now backup-incremental.timer
 # 4.5 Configurar rotació de logs (Journald)
 echo "Configurant límits de retenció de logs..."
 mkdir -p /etc/systemd/journald.conf.d/
