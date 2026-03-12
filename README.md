@@ -18,14 +18,51 @@
 
 ---
 
-## <a name="arquitectura"></a>1. Arquitectura i Configuració Inicial
-La infraestructura es basa en un servidor **Debian 13 (Trixie)** virtualitzat. Per garantir la col·laboració professional, hem centralitzat la gestió a `/opt/admin`.
 
-* **Estructura de Directoris:**
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## <a name="arquitectura"></a>1. Arquitectura i Configuració Inicial
+La infraestructura es basa en un servidor **Debian 13 (Trixie)** virtualitzat. 
+
+Per garantir la col·laboració professional, hem centralitzat la gestió a `/opt/admin`.
+
+* **Estructura de Directoris pels Administradors:**
     * `scripts/`: Lògica d'automatització i manteniment.
     * `configs/`: Fitxers de configuració, unitats de systemd i plantilles.
     * `logs/`: Registres de l'activitat dels scripts i serveis de backup.
     * `backups/`: Còpies locals (ignorat per Git via `.gitignore`).
+
+En quan als altres usuaris que no son Administradors disponen del següent arbre de directoris a `/home/`.
+
+* **Estructura de Directoris  i Fitxers pels altres usuaris COMPARTITS (`home/greendevcorp/`):**
+    * `done.log/`: Llista de tasques pendents on nomès pot editar el cap de projectes.
+    * `shared/`: Directori compartit per usuaris del mateix grup.
+ 
+A banda cada usuari treballador té un directori individual amb accés restringit a ell mateix (`home/devX/` on "X" és el número de usuari):
+
+Pel que fa a les backups es guarden dins del directori `/var/backups/backups_gsx/`
+
+
 
 ---
 
