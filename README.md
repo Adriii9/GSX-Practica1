@@ -163,11 +163,40 @@ En un entorn multiusuari, l'aïllament a nivell de sistema operatiu és vital. H
 Què passa si un desenvolupador marxa de la startup? L'esborrat no pot ser només manual.
 * Hem desenvolupat un script d'offboarding blindat (`delete_user.sh`) exclusiu per a l'administrador. 
 * Aquest script s'encarrega d'interrompre qualsevol sessió de `systemd/logind` activa (`loginctl terminate-user`), matar processos penjats en background (`pkill -9`) i esborrar l'usuari netament. Tot seguit, reorganitza els IDs de la resta de l'equip de forma automàtica (escalafó) per mantenir la coherència de l'entorn de treball.
+
 ---
 
 ## <a name="setmana5"></a> 6. Emmagatzematge i Backups (Setmana 5)
-* **Nou Disc:** Volum particionat i muntat de forma persistent via **UUID** a `/etc/fstab`.
-* **Estratègia 3-2-1:** 3 còpies, 2 suports, 1 de remota per garantir la recuperació de dades.
+
+L'objectiu d'aquesta setmana ha estat dissenyar i implementar una estratègia de còpies de seguretat robusta per a GreenDevCorp que garanteixi la persistència de les dades de l'equip de desenvolupament (`/home/greendevcorp`) i permeti una ràpida recuperació en cas de desastre, complint amb la regla d'or 3-2-1.
+
+### A. Storage Layout (Arquitectura de Discs)
+Hem separat físicament el sistema operatiu de les dades de backup per evitar que una fallada del disc principal arrossegui les còpies de seguretat.
+* **Disc Principal (`/dev/sda` - 20 GB):** Conté el sistema operatiu, aplicacions, logs i l'entorn col·laboratiu de l'equip (`/home/greendevcorp`).
+* **Disc Secundari (`/dev/sdb` - 10 GB):** Emmagatzematge dedicat exclusivament a backups. 
+  * **Format:** `ext4` (robust i amb suport natiu per a atributs, permisos i ACLs).
+  * **Persistència:** S'ha automatitzat el muntatge a `/mnt/backup_drive` mitjançant `/etc/fstab` utilitzant l'**UUID** del disc. Això garanteix que el sistema arrenqui correctament encara que canviï l'ordre del maquinari.
+
+### B. Capacity Planning (Planificació de Capacitat)
+El dimensionament del nou disc de 10 GB s'ha calculat preveient el creixement de la startup a 10 desenvolupadors:
+* Com que implementem backups **incrementals** (`rsync`), només emmagatzemem els canvis diaris (deltas), reduint dràsticament l'ús d'espai.
+* Estimem un volum de canvis d'uns 50 MB diaris. Amb una retenció de 30 dies, ocuparem aproximadament 1.5 GB. El disc de 10 GB ens dona un marge de creixement superior al 500%.
+
+### C. Backup Strategy (Estratègia 3-2-1)
+Hem dissenyat una estratègia **Híbrida**, combinant els punts forts dels backups de la Week 1 i els de la Week 5:
+* **Backups Incrementals (Diàriament amb `rsync`):** Sincronitzen el codi de `/home/greendevcorp` cap al disc `/dev/sdb`. Són extremadament ràpids i eficients, ideals per recuperar l'estat exacte del dia anterior si un desenvolupador esborra un fitxer per error. Retenció: 30 dies.
+* **Backups Complets (Setmanalment amb `tar`):** El sistema heretat de la Week 1 empaqueta infraestructures i altres carpetes vitals en un `.tar.gz`. Ideal per a restauracions cataclísmiques i arxivament profund. Retenció: 3 mesos.
+
+**Compliment de la Regla 3-2-1:**
+* **3 Còpies:** Dades de producció, Backup complet (`tar`) i Backup incremental (`rsync`).
+* **2 Suports Diferents:** Disc principal (`sda`) i disc secundari aïllat (`sdb`).
+* **1 Offsite:** *(Preparat per a la Part E mitjançant exportació NFS cap a un servidor remot).*
+
+### D. Automated Backup (Implementació)
+Per automatitzar l'estratègia incremental, hem creat una arquitectura basada en `systemd` garantint fiabilitat i observabilitat:
+1. **Script (`backup_incremental.sh`):** Utilitza `rsync -aq --delete` per crear una còpia mirall exacta conservant propietaris, grups i permisos especials (SetGID/Sticky Bit/ACLs) configurats a la Week 4.
+2. **Servei (`backup-incremental.service`):** Tipus `oneshot`, executat com a `root`. Incorpora límits de recursos (cgroups: `CPUQuota=40%`, `MemoryMax=300M`) per garantir que el procés de backup no saturi el rendiment del servidor Nginx.
+3. **Programador (`backup-incremental.timer`):** S'executa cada dia a les 02:00 AM (`OnCalendar=*-*-* 02:00:00`). L'opció `Persistent=true` assegura que si el servidor està apagat a aquella hora, el backup es farà just en engegar-lo.
 
 ---
 
@@ -213,10 +242,33 @@ Si un desenvolupador abandona la startup, el procés d'esborrat s'ha de fer de m
    * Força l'aturada de processos en background (`pkill -9`).
    * Esborra l'usuari i la seva carpeta home (`userdel -r`).
    * Reorganitza automàticament la resta de desenvolupadors (promociona `dev3` a `dev2`, etc.) per mantenir la coherència de l'entorn de treball i traspassa la propietat del `done.log` si escau.
+
 ---
 
-## <a name="recuperacio"></a> 9. Protocol de Recuperació de Desastres
-En cas de fallada total del directori administratiu:
-1. Executar el script de recuperació: `sudo bash /opt/admin/scripts/recovery_setup.sh`.
+## <a name="recuperacio"></a> 9. Protocol de Recuperació de Desastres (Runbook)
+
+Aquest manual descriu els procediments d'actuació en cas de pèrdua de dades a GreenDevCorp. Totes les operacions de restauració de la Week 5 han estat provades i validades mitjançant l'script automatitzat `test_restore.sh`.
+
+*Nota de seguretat: A causa de les restriccions d'ACLs implementades a la Week 4, totes les tasques de recuperació a `/home/greendevcorp` han de ser executades per un administrador utilitzant `sudo` per evitar errors de "Permission denied".*
+
+### Escenari 1: Recuperació Granular (Un fitxer esborrat per error)
+Aquest és l'escenari més comú. El codi font original resideix a `/home/greendevcorp/shared`.
+1. Accedir al servidor com a administrador (`gsx` amb privilegis `sudo`).
+2. Anar al disc de còpies de seguretat: `cd /mnt/backup_drive/incrementals/greendevcorp/shared/`
+3. Cercar el fitxer o carpeta esborrada en aquest directori.
+4. Restaurar-lo manualment a la seva ubicació original preservant els atributs (`-a`):
+   `sudo rsync -a <nom_del_fitxer> /home/greendevcorp/shared/`
+5. Verificar amb el desenvolupador afectat que el fitxer és accessible.
+
+### Escenari 2: Pèrdua Total de l'Entorn de Desenvolupament
+Si tot el directori `/home/greendevcorp` s'ha corromput o esborrat.
+1. Com a `root`, aturar els serveis que puguin escriure a disc (ex. Nginx) si fos necessari.
+2. Volcar la còpia mirall de la nit anterior directament sobre producció. L'ús del paràmetre `-a` és crític perquè restaurarà automàticament els permisos, propietaris i les POSIX ACLs de la Week 4:
+   `sudo rsync -a /mnt/backup_drive/incrementals/greendevcorp/ /home/greendevcorp/`
+3. Reiniciar els serveis i verificar l'accés de l'equip.
+
+### Escenari 3: Corrupció del Directori Administratiu (Infraestructura com a Codi)
+En cas de fallada total, corrupció o esborrat de `/opt/admin` (Week 1):
+1. Executar l'script de recuperació d'emergència: `sudo bash /opt/admin/scripts/recovery_setup.sh` (si encara és accessible a la memòria, en cas contrari tornar a clonar via Git).
 2. L'script netejarà el directori i forçarà el retorn al **commit de seguretat b36fbb4**.
-3. Per a restaurar dades de l'usuari, seguir el runbook de restauració des de `/var/backups/backups_gsx`.
+3. L'script s'encarregarà de reaplicar automàticament els permisos de col·laboració (`root:sudo` a 775/770) perquè l'equip de sistemes pugui continuar operant sense problemes.
