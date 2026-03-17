@@ -1,1 +1,1 @@
-/home/gsx/Public
+home/dev1
