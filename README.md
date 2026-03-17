@@ -205,6 +205,14 @@ L'entorn es configura automàticament gràcies a `/etc/profile.d/greendevcorp_en
 2. Afegir la clau pública al fitxer `authorized_keys` del servidor.
 3. Clonar aquest repositori a la seva carpeta local per col·laborar en els scripts.
 
+### D. Offboarding (Baixa d'un Membre)
+Si un desenvolupador abandona la startup, el procés d'esborrat s'ha de fer de manera neta i segura per no deixar processos zombis ni trencar la jerarquia de l'equip.
+1. **Executar script d'Offboarding:** `sudo bash /opt/admin/scripts/delete_user.sh <numero_dev>` (ex: `sudo bash delete_user.sh 2`).
+2. **Què fa l'script per sota?**
+   * Tanca qualsevol sessió de `systemd/logind` activa (`loginctl terminate-user`).
+   * Força l'aturada de processos en background (`pkill -9`).
+   * Esborra l'usuari i la seva carpeta home (`userdel -r`).
+   * Reorganitza automàticament la resta de desenvolupadors (promociona `dev3` a `dev2`, etc.) per mantenir la coherència de l'entorn de treball i traspassa la propietat del `done.log` si escau.
 ---
 
 ## <a name="recuperacio"></a> 9. Protocol de Recuperació de Desastres
