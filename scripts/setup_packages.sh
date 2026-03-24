@@ -57,7 +57,6 @@ systemctl restart nginx
 systemctl enable --now backup-gsx-24h.timer
 systemctl enable --now backup-gsx-72h.timer
 systemctl enable --now backup-gsx-7D.timer
-systemctl enable --now workload-simulator.timer
 systemctl enable --now backup-incremental.timer
 # 4.5 Configurar rotació de logs (Journald)
 echo "Configurant límits de retenció de logs..."
